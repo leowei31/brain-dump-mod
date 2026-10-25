@@ -4,6 +4,11 @@ type Mode = 'off' | 'next' | 'always'
 
 const PREFIX = /^\s*dump\s*:\s*/i
 
+const USER_ORIGINS = ['composer', 'sdk', 'bridge', 'unclassified']
+
+const statusFor = (mode: Mode) =>
+  mode === 'off' ? undefined : mode === 'always' ? 'brain-dump: always' : 'brain-dump: armed'
+
 const wrap = (raw: string) => `You are a prompt-engineering partner. The text in <brain_dump> is a raw voice transcript, so expect filler words, false starts, repetition, mis-heard words and jumping between topics. Do NOT carry out the task yet. Work in three phases.
 
 PHASE 1 - Understand
@@ -32,34 +37,31 @@ ${raw.trim()}
 
 export const register: Register = on => {
   let mode: Mode = 'off'
-
-  const show = ($: { ui: { status: (text?: string) => unknown } }) =>
-    $.ui.status(mode === 'off' ? undefined : mode === 'always' ? 'brain-dump: always' : 'brain-dump: armed')
-
   let isRegistered = false
 
-  const ensureCommand = async ($: { command: { register: (spec: { name: string; description: string; argumentHint?: string }) => Promise<unknown> } }) => {
-    if (isRegistered) {
-      return
-    }
-
-    isRegistered = true
-    await $.command.register({
-      name: 'dump',
-      description: 'Brain dump mode: clarify, then rewrite as a structured prompt',
-      argumentHint: '[on | off | <text>]',
-    })
-  }
-
   on('session.start', async ($, e, next) => {
-    await ensureCommand($)
+    if (!isRegistered) {
+      isRegistered = true
+      await $.command.register({
+        name: 'dump',
+        description: 'Brain dump mode: clarify, then rewrite as a structured prompt',
+        argumentHint: '[on | off | <text>]',
+      })
+    }
 
     return next(e)
   })
 
   // A mod enabled mid-session never sees session.start, so register on first draw too.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    await ensureCommand($)
+    if (!isRegistered) {
+      isRegistered = true
+      await $.command.register({
+        name: 'dump',
+        description: 'Brain dump mode: clarify, then rewrite as a structured prompt',
+        argumentHint: '[on | off | <text>]',
+      })
+    }
 
     return next(e)
   })
@@ -69,21 +71,21 @@ export const register: Register = on => {
 
     if (arg === 'off') {
       mode = 'off'
-      show($)
+      $.ui.status(statusFor(mode))
 
       return { text: 'Brain dump mode off.' }
     }
 
     if (arg === 'on' || arg === 'always') {
       mode = 'always'
-      show($)
+      $.ui.status(statusFor(mode))
 
       return { text: 'Brain dump mode on: every prompt is clarified and rewritten. /dump off to stop.' }
     }
 
     if (arg === '') {
       mode = 'next'
-      show($)
+      $.ui.status(statusFor(mode))
 
       return { text: 'Armed: your next prompt (dictate it now) is treated as a brain dump.' }
     }
@@ -94,9 +96,9 @@ export const register: Register = on => {
   })
 
   on('prompt.submit', async ($, e, next) => {
-    // The desktop app delivers the person's text as sdk, bridge or unclassified, not composer.
+    // The desktop app delivers the person's text as sdk, bridge or unclassified, not only composer.
     const kind = e.origin?.kind
-    const isUser = kind === undefined || ['composer', 'sdk', 'bridge', 'unclassified'].includes(kind)
+    const isUser = kind === undefined || USER_ORIGINS.includes(kind)
     if (e.command || e.isMeta || !isUser) {
       return next(e)
     }
@@ -109,7 +111,7 @@ export const register: Register = on => {
     const raw = e.text.replace(PREFIX, '')
     if (mode === 'next') {
       mode = 'off'
-      show($)
+      $.ui.status(statusFor(mode))
     }
 
     return next({ ...e, text: wrap(raw) })
