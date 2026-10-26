@@ -18,12 +18,18 @@ Then start a new session.
 
 ## Use
 
-- `/dump` arms your next prompt as a brain dump.
-- `dump: <text>` at the start of any prompt treats just that prompt as a brain dump.
-- `/dump on` treats every prompt as a brain dump, and `/dump off` stops that.
-- `/dump <text>` submits the text directly as a brain dump.
+- `/dump` arms your next message as a brain dump. Dictate it and send it.
+- `dump: <text>` at the start of a message makes just that message a brain dump, with no `/dump` first.
+- `/dump on` makes every message a brain dump until you run `/dump off`.
 
 The status line shows `brain-dump: armed` or `brain-dump: always` while a mode is active.
+
+After Claude asks its questions, answer them and say go when you are happy with the rewritten prompt.
+Use `/dump` or `dump:` for the dump itself and leave the mode off for the replies.
+With `/dump on` active, your answers and your "go" are wrapped as brain dumps too.
+
+`/dump` followed by other text does not submit it.
+It shows a reminder to use `dump:` for a one-message dump.
 
 ## Notes
 

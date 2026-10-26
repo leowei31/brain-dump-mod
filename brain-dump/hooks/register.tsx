@@ -45,7 +45,7 @@ export const register: Register = on => {
       await $.command.register({
         name: 'dump',
         description: 'Brain dump mode: clarify, then rewrite as a structured prompt',
-        argumentHint: '[on | off | <text>]',
+        argumentHint: '[on | off]',
       })
     }
 
@@ -59,7 +59,7 @@ export const register: Register = on => {
       await $.command.register({
         name: 'dump',
         description: 'Brain dump mode: clarify, then rewrite as a structured prompt',
-        argumentHint: '[on | off | <text>]',
+        argumentHint: '[on | off]',
       })
     }
 
@@ -90,9 +90,7 @@ export const register: Register = on => {
       return { text: 'Armed: your next prompt (dictate it now) is treated as a brain dump.' }
     }
 
-    void $.prompt.submit({ text: wrap(arg) })
-
-    return { text: 'Brain dump received.' }
+    return { text: 'To dump in one message, start it with "dump:". Or run /dump, then send your message.' }
   })
 
   on('prompt.submit', async ($, e, next) => {
